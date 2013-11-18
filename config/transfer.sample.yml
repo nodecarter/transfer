@@ -1,0 +1,29 @@
+source:
+  adapter: mysql2
+  host: localhost
+  database: target_db
+  user: root
+  password:
+  encoding: utf8
+
+target:
+  adapter: postgres
+  host: localhost
+  database: source_db
+  user: postgres
+  password:
+  encoding: utf8
+
+#by default value is Converter::SourceTarget
+#converter:
+#  class_name: Converter::MysqlPostgres
+
+#by default the validator is enabled
+#validator:
+#  enabled: true
+
+worker:
+  stop_on_error: true
+
+# Transfer mode: ddl/data/full
+mode: full

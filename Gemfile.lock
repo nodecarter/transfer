@@ -1,0 +1,35 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ansi (1.4.3)
+    builder (3.2.2)
+    hashie (2.0.5)
+    metaclass (0.0.1)
+    minitest (4.7.5)
+    minitest-reporters (0.14.23)
+      ansi
+      builder
+      minitest (>= 2.12, < 5.0)
+      powerbar
+    mocha (0.14.0)
+      metaclass (~> 0.0.1)
+    mysql2 (0.3.14)
+    pg (0.17.0)
+    powerbar (1.0.11)
+      ansi (~> 1.4.0)
+      hashie (>= 1.1.0)
+    rake (10.1.0)
+    sequel (4.4.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler
+  minitest
+  minitest-reporters
+  mocha
+  mysql2
+  pg
+  rake
+  sequel
