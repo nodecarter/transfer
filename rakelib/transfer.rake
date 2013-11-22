@@ -6,7 +6,7 @@ task :transfer do
   #end
 end
 
-desc 'run tests'
-task :test do
-  ruby 'test/unit/transfer/config_test.rb'
+task :environment do
+  require File.expand_path('../../lib/transfer', __FILE__)
 end
+

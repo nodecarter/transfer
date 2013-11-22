@@ -1,8 +1,12 @@
+require 'yaml'
+
 class Transfer::Config
   attr_reader :config
 
-  def initialize(config_filename)
-    @config = load_config(config_filename)
+  def initialize(config_source)
+    plain_hash = config_source.is_a?(Hash) ? config_source : load_config(config_source)
+    @config = HashWithIndifferentAccess.new(plain_hash).deep_symbolize_keys
+    #@config = plain_hash.deep_symbolize_keys
     check_config!
   end
 
@@ -21,6 +25,8 @@ class Transfer::Config
   end
 
   def check_config!
+    assert_config config && config.is_a?(Hash), 'configuration does not loaded'
+
     %w{source target mode}.each do |required_key|
       assert_config config.has_key?(required_key.to_sym),
                     "'#{required_key}' not found in configuration."
@@ -46,6 +52,8 @@ class Transfer::Config
   end
 
   def load_config(config_filename)
-    YAML::load(config_filename)
+    File.open(config_filename, 'r') do |config_file|
+      YAML.load(config_file)
+    end
   end
 end
