@@ -9,17 +9,14 @@ class Transfer::Worker
   end
 
   def table_names
-    if config.transfer_all_tables?
-
-
-    end
+    @table_names ||= source_db.tables
   end
 
   def source_db
-    @source_db ||= Sequel.connect(config.source)
+    @source_db ||= @options[:source_db] || Sequel.connect(config.source)
   end
 
   def target_db
-    @target_db ||= Sequel.connect(config.target)
+    @target_db ||= @options[:target_db] || Sequel.connect(config.target)
   end
 end
