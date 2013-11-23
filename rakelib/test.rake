@@ -4,18 +4,28 @@ namespace :db do
   desc 'create test databases'
   task :create => [:environment] do
     with_source_connection do |client, database|
-      query = "CREATE DATABASE IF NOT EXISTS `#{database}` CHARACTER SET utf8 COLLATE utf8_unicode_ci"
-      puts "creating database #{database}..."
+      query = "CREATE DATABASE IF NOT EXISTS #{client.escape(database)} CHARACTER SET utf8 COLLATE utf8_unicode_ci"
+      puts "creating source test database #{database}..."
       client.query(query)
+    end
+    with_target_connection do |conn, database|
+      query = "CREATE DATABASE #{conn.escape_string(database)} ENCODING 'utf8'"
+      puts "creating target test database #{database}..."
+      conn.exec(query)
     end
   end
 
   desc 'drop test source database'
   task :drop => [:environment] do
     with_source_connection do |client, database|
-      puts "dropping database #{database}..."
-      query = "DROP DATABASE IF EXISTS `#{database}`"
+      puts "dropping source test database #{database}..."
+      query = "DROP DATABASE IF EXISTS #{client.escape(database)}"
       client.query(query)
+    end
+    with_target_connection do |conn, database|
+      puts "dropping target test database #{database}..."
+      query = "DROP DATABASE IF EXISTS #{conn.escape_string(database)}"
+      conn.query(query)
     end
   end
 
@@ -25,7 +35,7 @@ namespace :db do
     source = config.source
     dump_file = File.expand_path('test/fixtures/test_source_dump.sql', APP_ROOT)
     recovery_cmd = "mysql -u #{source[:username]} -h #{source[:host]} -D #{source[:database]} < #{dump_file}"
-    puts "restore database: '#{recovery_cmd}'"
+    puts "restore source test database: '#{recovery_cmd}'"
     system recovery_cmd
   end
 
@@ -35,6 +45,19 @@ namespace :db do
     conn_hash = config.source.dup
     database = conn_hash.delete(:database)
     client = Mysql2::Client.new(conn_hash)
+    begin
+      yield client, database
+    ensure
+      client.close
+    end
+  end
+
+  # connect to database server to manipulate with a database
+  def with_target_connection
+    config = get_test_config
+    conn_hash = config.target.dup
+    database = conn_hash.delete(:database)
+    client = PG::Connection.new(host: conn_hash[:host], user: conn_hash[:username])
     begin
       yield client, database
     ensure
