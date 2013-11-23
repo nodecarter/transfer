@@ -15,7 +15,7 @@ namespace :db do
     end
   end
 
-  desc 'drop test source database'
+  desc 'drop test databases'
   task :drop => [:environment] do
     with_source_connection do |client, database|
       puts "dropping source test database #{database}..."
@@ -29,13 +29,19 @@ namespace :db do
     end
   end
 
-  desc 'restore test source database from dump'
+  desc 'restore test databases from dump'
   task :restore => [:create] do
     config = get_test_config
     source = config.source
     dump_file = File.expand_path('test/fixtures/test_source_dump.sql', APP_ROOT)
     recovery_cmd = "mysql -u #{source[:username]} -h #{source[:host]} -D #{source[:database]} < #{dump_file}"
     puts "restore source test database: '#{recovery_cmd}'"
+    system recovery_cmd
+
+    target = config.target
+    dump_file = File.expand_path('test/fixtures/test_target_dump.sql', APP_ROOT)
+    recovery_cmd = "psql -d #{target[:database]} -U #{target[:username]} -h #{target[:host]} -f #{dump_file}"
+    puts "restore target test database: '#{recovery_cmd}'"
     system recovery_cmd
   end
 

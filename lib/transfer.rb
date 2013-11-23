@@ -16,3 +16,4 @@ $LOAD_PATH << File.expand_path('..', __FILE__)
 
 require 'transfer/config'
 require 'transfer/worker'
+require 'transfer/validator'
