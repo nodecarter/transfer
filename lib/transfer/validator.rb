@@ -18,7 +18,7 @@ class Transfer::Validator
   protected
 
   def validate_target_empty!(source, target)
-    raise "#{target} must be empty." if source_db[target].count != 0
+    raise "#{target} must be empty." if target_db[target].count != 0
   end
 
   def validate_records_count!(source, target)

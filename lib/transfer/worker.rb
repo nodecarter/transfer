@@ -34,7 +34,15 @@ class Transfer::Worker
 
     validator = validator(table_name)
     validator.validate_before!(table_name)
+    source_model = Sequel::Model(table_name)
+    source_model.db = source_db
 
+    #binding.pry
+    #rows_per_fetch = 100
+    #if source_db[:table_name]
+    source_db[table_name].order(source_model.primary_key).paged_each do |source_row|
+      target_db[table_name].insert(source_row)
+    end
     validator.validate_after!(table_name)
   end
 
