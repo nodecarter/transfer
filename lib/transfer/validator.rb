@@ -18,7 +18,10 @@ class Transfer::Validator
   protected
 
   def validate_target_empty!(source, target)
-    raise "#{target} must be empty." if target_db[target].count != 0
+    if target_db[target].count != 0
+      raise "#{target} must be empty. You can skip this table by including in exclude_tables list in config " +
+          "or you can delete all data in this table by including in truncate_tables list."
+    end
   end
 
   def validate_records_count!(source, target)
