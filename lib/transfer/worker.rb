@@ -9,7 +9,7 @@ class Transfer::Worker
   end
 
   def table_names
-    @table_names ||= source_db.tables
+    @table_names ||= source_db.tables - config.exclude
   end
 
   def source_db
@@ -79,18 +79,18 @@ class Transfer::Worker
     if target_buf.length > 0
       target_db[table_name].import(columns, target_buf)
     end
-    validator.validate_after!(table_name)
+    #validator.validate_after!(table_name)
   end
 
   def source_fetch(table_name)
     source_model = Sequel::Model(table_name)
     source_model.db = source_db
     if source_model.primary_key.is_a? Symbol
-      source_db[table_name].order(source_model.primary_key).paged_each do |source_row|
+      source_db[table_name].order(source_model.primary_key).limit(100).paged_each do |source_row|
         yield source_row
       end
     else
-      source_db[table_name].all do |source_row|
+      source_db[table_name].limit(100) do |source_row|
         yield source_row
       end
     end

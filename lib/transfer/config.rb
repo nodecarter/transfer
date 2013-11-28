@@ -45,6 +45,10 @@ class Transfer::Config
     config[:mode].to_sym
   end
 
+  def exclude
+    (config[:exclude] || []).map { |table_name| table_name.to_sym }
+  end
+
   private
 
   def assert_config(assertion, message)
