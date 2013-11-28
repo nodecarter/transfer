@@ -20,6 +20,14 @@ class Transfer::Worker
     @target_db ||= @options[:target_db] || Sequel.connect(config.target)
   end
 
+  def transfer_all
+    target_db.transaction do
+      table_names.each do |table_name|
+        transfer_table table_name
+      end
+    end
+  end
+
   def transfer_table(table_name)
     # checks before:
     #   source:
@@ -32,14 +40,11 @@ class Transfer::Worker
     #     - records count the same as in source
     #     - next autoincrement value
 
+    log "transfer table #{table_name}"
     validator = validator(table_name)
     validator.validate_before!(table_name)
     source_model = Sequel::Model(table_name)
     source_model.db = source_db
-
-    #binding.pry
-    #rows_per_fetch = 100
-    #if source_db[:table_name]
     source_db[table_name].order(source_model.primary_key).paged_each do |source_row|
       target_db[table_name].insert(source_row)
     end
@@ -56,5 +61,21 @@ class Transfer::Worker
     custom_validator_klass = @options["validator-#{table_name}"]
     return nil unless custom_validator_klass.present?
     custom_validator_klass.constantize
+  end
+
+  private
+
+  def logger
+    @logger ||= @options[:logger] || create_default_logger
+  end
+
+  def create_default_logger
+    logg = Logger.new(STDOUT)
+    logg.level = Logger::INFO
+    logg
+  end
+
+  def log(message)
+    logger.info message
   end
 end

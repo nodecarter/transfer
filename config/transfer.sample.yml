@@ -1,7 +1,7 @@
 source:
   adapter: mysql2
   host: localhost
-  database: target_db
+  database: source_db
   user: root
   password:
   encoding: utf8
@@ -9,7 +9,7 @@ source:
 target:
   adapter: postgres
   host: localhost
-  database: source_db
+  database: target_db
   user: postgres
   password:
   encoding: utf8
