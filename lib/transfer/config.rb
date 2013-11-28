@@ -45,8 +45,12 @@ class Transfer::Config
     config[:mode].to_sym
   end
 
-  def exclude
-    (config[:exclude] || []).map { |table_name| table_name.to_sym }
+  def exclude_tables
+    (config[:exclude_tables] || []).map { |table_name| table_name.to_sym }
+  end
+
+  def truncate_tables
+    (config[:truncate_tables] || []).map { |table_name| table_name.to_sym }
   end
 
   private

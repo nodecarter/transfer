@@ -9,7 +9,7 @@ class Transfer::Worker
   end
 
   def table_names
-    @table_names ||= source_db.tables - config.exclude
+    @table_names ||= source_db.tables - config.exclude_tables
   end
 
   def source_db
@@ -37,7 +37,6 @@ class Transfer::Worker
   end
 
   def transfer_table(table_name)
-    log "transfer table #{table_name}"
     if target_db.in_transaction?
       actual_transfer_table(table_name)
     else
@@ -62,15 +61,22 @@ class Transfer::Worker
   private
 
   def actual_transfer_table(table_name)
+    if config.truncate_tables.include?(table_name)
+      logger.info "truncate #{table_name}"
+      target_db[table_name].truncate
+    end
+    logger.info "copy #{table_name}"
+
     validator = validator(table_name)
     validator.validate_before!(table_name)
 
     buf_size = 1000
     target_buf = []
-    columns = nil
+
+    columns = columns_for(table_name)
+
     source_fetch(table_name) do |source_row|
-      columns ||= source_row.keys
-      target_buf << source_row.values
+      target_buf << columns.map { |c| source_row[c] }
       if target_buf.length > buf_size
         target_db[table_name].import(columns, target_buf)
         target_buf.clear
@@ -80,6 +86,16 @@ class Transfer::Worker
       target_db[table_name].import(columns, target_buf)
     end
     #validator.validate_after!(table_name)
+  end
+
+  def columns_for(table_name)
+    source_columns = source_db[table_name].columns
+    target_columns = target_db[table_name].columns
+    lost_columns = source_columns - target_columns
+    logger.warn "Columns #{lost_columns} not exists in target and will NOT be transfered." if lost_columns.any?
+    new_columns = target_columns - source_columns
+    logger.warn "Columns #{new_columns} not found in source table." if new_columns.any?
+    target_columns - new_columns
   end
 
   def source_fetch(table_name)
@@ -104,9 +120,5 @@ class Transfer::Worker
     logg = Logger.new(STDOUT)
     logg.level = Logger::INFO
     logg
-  end
-
-  def log(message)
-    logger.info message
   end
 end
