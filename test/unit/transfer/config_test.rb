@@ -63,23 +63,4 @@ class Transfer::ConfigTest < MiniTest::Unit::TestCase
       Transfer::Config.new(@test_config)
     end
   end
-
-  def test_mode_ok
-    modes = %w{ddl data full}
-    modes.each do |mode|
-      @test_config[:mode] = mode
-      config = Transfer::Config.new(@test_config)
-      assert config
-    end
-  end
-
-  def test_mode_error
-    modes = %w{mode_x mode_y dll}
-    modes.each do |mode|
-      @test_config[:mode] = mode
-      assert_raises Transfer::ConfigError do
-        Transfer::Config.new(@test_config)
-      end
-    end
-  end
 end

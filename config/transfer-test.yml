@@ -12,8 +12,3 @@ target:
   database: pg_transfer_test
   username: postgres
   password:
-
-worker:
-  stop_on_error: true
-
-mode: full

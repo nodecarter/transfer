@@ -14,16 +14,12 @@ target:
   password:
   encoding: utf8
 
-#by default value is Converter::SourceTarget
-#converter:
-#  class_name: Converter::MysqlPostgres
+# these tables will be skipped
+#exclude_tables:
+#  - schema_migrations
 
-#by default the validator is enabled
-#validator:
-#  enabled: true
+# these target tables wil be truncated before copy data into
+#truncate_tables:
+#  - roles
+#  - users
 
-worker:
-  stop_on_error: true
-
-# Transfer mode: ddl/data/full
-mode: full

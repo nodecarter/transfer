@@ -29,7 +29,7 @@ class Transfer::Worker
   end
 
   def transfer_all
-    target_db.transaction(rollback: :always) do
+    target_db.transaction do #(rollback: :always) do
       table_names.each do |table_name|
         transfer_table table_name
       end
@@ -40,7 +40,7 @@ class Transfer::Worker
     if target_db.in_transaction?
       actual_transfer_table(table_name)
     else
-      target_db.transaction(rollback: :always) do
+      target_db.transaction do #(rollback: :always) do
         actual_transfer_table(table_name)
       end
     end
@@ -102,11 +102,11 @@ class Transfer::Worker
     source_model = Sequel::Model(table_name)
     source_model.db = source_db
     if source_model.primary_key.is_a? Symbol
-      source_db[table_name].order(source_model.primary_key).limit(100).paged_each do |source_row|
+      source_db[table_name].order(source_model.primary_key).paged_each do |source_row|
         yield source_row
       end
     else
-      source_db[table_name].limit(100) do |source_row|
+      source_db[table_name].all do |source_row|
         yield source_row
       end
     end
