@@ -38,9 +38,10 @@ Transfer will be run in transaction. If some error will be occur all transfer wi
 
 ## Validations
 
-There ar two simple validations.
-At first we check that target table is empty.
-At the end of transfer we check that count of records are the same.
+There are few simple validations.
+- the target table should be empty
+- primary key on the target should be the same as in the source
+- count of records in the target are the same as in the source after copying
 
 ## Config
 

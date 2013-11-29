@@ -7,6 +7,7 @@ class Transfer::Validator
 
   def validate_before!(table_name)
     validate_target_empty!(table_name)
+    validate_pk_identical!(table_name)
   end
 
   def validate_after!(table_name)
@@ -19,6 +20,16 @@ class Transfer::Validator
     if target_db[table_name].count != 0
       raise "#{table_name} must be empty. You can skip this table by including in exclude_tables list in config " +
           "or you can delete all data in this table by including in truncate_tables list."
+    end
+  end
+
+  def validate_pk_identical!(table_name)
+    source = Sequel::Model(table_name)
+    source.db = source_db
+    target = Sequel::Model(table_name)
+    target.db = target_db
+    if source.primary_key != target.primary_key
+      raise "Primary key on source and target should be identical. #{source.primary_key} != #{target.primary_key}"
     end
   end
 

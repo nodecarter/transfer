@@ -1,4 +1,6 @@
 class Transfer::Worker
+  BUF_SIZE = 1000
+
   attr_reader :config
 
   # Transfer::Worker.new(config)
@@ -61,31 +63,56 @@ class Transfer::Worker
   private
 
   def actual_transfer_table(table_name)
-    if config.truncate_tables.include?(table_name)
-      logger.info "truncate #{table_name}"
-      target_db[table_name].truncate
-    end
+    truncate_table_if_needed(table_name)
+
     logger.info "copy #{table_name}"
 
     validator = validator(table_name)
     validator.validate_before!(table_name)
 
-    buf_size = 1000
+    columns, blob_columns = columns_for(table_name)
+    copy_data(table_name, columns)
+    copy_blobs(table_name, blob_columns)
+
+    validator.validate_after!(table_name)
+  end
+
+  def truncate_table_if_needed(table_name)
+    return unless config.truncate_tables.include?(table_name)
+    logger.info "truncate #{table_name}"
+    target_db[table_name].truncate
+  end
+
+  def copy_data(table_name, columns)
     target_buf = []
-
-    columns = columns_for(table_name)
-
     source_fetch(table_name) do |source_row|
       target_buf << columns.map { |c| source_row[c] }
-      if target_buf.length > buf_size
+      if target_buf.length > BUF_SIZE
         target_db[table_name].import(columns, target_buf)
         target_buf.clear
       end
     end
-    if target_buf.length > 0
-      target_db[table_name].import(columns, target_buf)
+
+    target_db[table_name].import(columns, target_buf) if target_buf.any?
+  end
+
+  def copy_blobs(table_name, blob_columns)
+    return unless blob_columns.any?
+    logger.info "copy blob columns #{blob_columns}"
+
+    source_model = Sequel::Model(table_name)
+    source_model.db = source_db
+    pk = source_model.primary_key
+    raise "Can't copy blob without primary key or composite primary key" if pk.nil? || pk.is_a?(Array)
+
+    source_fetch(table_name) do |source_row|
+      blob_columns.each do |blob_column|
+        value = source_row[blob_column]
+        next unless value
+        blob_value = Sequel.blob(value)
+        target_db[table_name].where(pk => source_row[pk]).update(blob_column => blob_value)
+      end
     end
-    #validator.validate_after!(table_name)
   end
 
   def columns_for(table_name)
@@ -95,7 +122,13 @@ class Transfer::Worker
     logger.warn "Columns #{lost_columns} not exists in target and will NOT be transfered." if lost_columns.any?
     new_columns = target_columns - source_columns
     logger.warn "Columns #{new_columns} not found in source table." if new_columns.any?
-    target_columns - new_columns
+    columns = target_columns - new_columns
+    blob_columns = blob_columns_for(table_name) & columns
+    [columns - blob_columns, blob_columns]
+  end
+
+  def blob_columns_for(table_name)
+    target_db.schema(table_name).find_all { |col| col[1][:type] == :blob }.map { |col| col[0] }
   end
 
   def source_fetch(table_name)
