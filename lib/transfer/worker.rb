@@ -65,35 +65,41 @@ class Transfer::Worker
   def actual_transfer_table(table_name)
     truncate_table_if_needed(table_name)
 
-    logger.info "copy #{table_name}"
+    logger.info "copy #{table_name}..."
 
     validator = validator(table_name)
     validator.validate_before!(table_name)
 
     columns, blob_columns = columns_for(table_name)
-    copy_data(table_name, columns)
+    copied_recs = copy_data(table_name, columns)
+    logger.info "copied #{copied_recs} records"
     copy_blobs(table_name, blob_columns)
+    reset_sequence(table_name)
 
     validator.validate_after!(table_name)
   end
 
   def truncate_table_if_needed(table_name)
-    return unless config.truncate_tables.include?(table_name)
+    return unless config.truncate_table?(table_name)
     logger.info "truncate #{table_name}"
     target_db[table_name].truncate
   end
 
   def copy_data(table_name, columns)
     target_buf = []
+    copied_records = 0
     source_fetch(table_name) do |source_row|
       target_buf << columns.map { |c| source_row[c] }
       if target_buf.length > BUF_SIZE
         target_db[table_name].import(columns, target_buf)
         target_buf.clear
       end
+      copied_records += 1
     end
 
     target_db[table_name].import(columns, target_buf) if target_buf.any?
+
+    copied_records
   end
 
   def copy_blobs(table_name, blob_columns)
@@ -112,6 +118,13 @@ class Transfer::Worker
         blob_value = Sequel.blob(value)
         target_db[table_name].where(pk => source_row[pk]).update(blob_column => blob_value)
       end
+    end
+  end
+
+  def reset_sequence(table_name)
+    if target_db.primary_key_sequence(table_name)
+      seq_value = target_db.reset_primary_key_sequence(table_name)
+      logger.info "set primary key sequence to #{seq_value}"
     end
   end
 

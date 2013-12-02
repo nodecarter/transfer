@@ -40,8 +40,16 @@ class Transfer::Config
     (config[:exclude_tables] || []).map { |table_name| table_name.to_sym }
   end
 
+  def truncate_all_tables?
+    config[:truncate_all_tables]
+  end
+
   def truncate_tables
     (config[:truncate_tables] || []).map { |table_name| table_name.to_sym }
+  end
+
+  def truncate_table?(table_name)
+    truncate_all_tables? || truncate_tables.include?(table_name)
   end
 
   private
